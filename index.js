@@ -430,7 +430,7 @@ app.post('/api/appointments/:email/cancel', async (req, res) => {
     // Get the user's next upcoming booked appointment
     const appointment = await pool.query(
       `SELECT * FROM appointments 
-       WHERE email = $1 AND slot > NOW() AND status = 'booked'
+       WHERE email = $1 AND slot > NOW() AND status IN ('booked', 'rescheduled')
        ORDER BY slot ASC LIMIT 1`,
       [email]
     );
