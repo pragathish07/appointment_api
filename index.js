@@ -16,11 +16,11 @@ app.use(cors());
 app.use(bodyParser.json());
 
  const pool = new Pool({
-  user: 'postgres',
-  host: 'shinkansen.proxy.rlwy.net',
-  database: 'railway',
-  password: 'xaZYzwJSEnXtOrbEdlbsxwqBeXSouEMP',
-  port: 21790
+  user: 'umhre9bpwaa0kdlwaffy',
+  host: 'brcn63rrvzidwfsxpiiz-postgresql.services.clever-cloud.com',
+  database: 'brcn63rrvzidwfsxpiiz',
+  password: 'BQntnQejUZvCo4v3mKbKeLpzuVF142',
+  port: 50013
 });
 
 // Initialize DB
@@ -28,7 +28,7 @@ const initDB = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS appointments (
       id SERIAL PRIMARY KEY,
-      uid UUID DEFAULT INT,
+      uid TEXT,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       slot TIMESTAMPTZ NOT NULL,
@@ -422,15 +422,34 @@ app.post('/api/appointments', async (req, res) => {
 
 
 // Cancel a booking
-app.post('/api/appointments/:uid/cancel', async (req, res) => {
-  const { uid } = req.params;
+app.post('/api/appointments/:email/cancel', async (req, res) => {
+  const { email } = req.params;
   const { cancellationReason } = req.body;
+
   try {
-    const result = await pool.query(
-      `UPDATE appointments SET status = $1, description = COALESCE(description, '') || '\nCancelled Reason: ' || $2 WHERE uid = $3 RETURNING *`,
-      ['cancelled', cancellationReason || 'User requested cancellation', uid]
+    // Get the user's next upcoming booked appointment
+    const appointment = await pool.query(
+      `SELECT * FROM appointments 
+       WHERE email = $1 AND slot > NOW() AND status = 'booked'
+       ORDER BY slot ASC LIMIT 1`,
+      [email]
     );
-    if (result.rowCount === 0) return res.status(404).json({ error: 'Booking not found' });
+
+    if (appointment.rowCount === 0) {
+      return res.status(404).json({ error: 'No upcoming booking found for this email' });
+    }
+
+    const appointmentId = appointment.rows[0].id;
+
+    // Cancel the appointment and update description with reason
+    const result = await pool.query(
+      `UPDATE appointments 
+       SET status = $1, 
+           description = COALESCE(description, '') || '\nCancelled Reason: ' || $2 
+       WHERE id = $3 
+       RETURNING *`,
+      ['cancelled', cancellationReason || 'User requested cancellation', appointmentId]
+    );
     
     await sendCancelEmail({
       to: result.rows[0].email, 
@@ -453,24 +472,38 @@ app.post('/api/appointments/:uid/cancel', async (req, res) => {
 });
 
 // Reschedule a booking
-app.post('/api/appointments/:uid/reschedule', async (req, res) => {
-  const { uid } = req.params;
+app.post('/api/appointments/:email/reschedule', async (req, res) => {
+  const { email } = req.params;
   const { newDateTime } = req.body;
+
   try {
-    const availability = await pool.query('SELECT * FROM appointments WHERE slot = $1 AND status = $2', [newDateTime, 'booked']);
-    if (availability.rows.length > 0) return res.status(409).json({ error: 'New slot not available' });
-
-    // First get the original appointment details
-    const originalAppointment = await pool.query('SELECT * FROM appointments WHERE uid = $1', [uid]);
-    if (originalAppointment.rowCount === 0) return res.status(404).json({ error: 'Booking not found' });
-    
-    const originalSlot = originalAppointment.rows[0].slot;
-
-    // Then update the appointment
-    const result = await pool.query(
-      `UPDATE appointments SET slot = $1, status = 'rescheduled' WHERE uid = $2 RETURNING *`,
-      [newDateTime, uid]
+    // Check if new slot is already booked
+    const availability = await pool.query(
+      'SELECT * FROM appointments WHERE slot = $1 AND status = $2',
+      [newDateTime, 'booked']
     );
+    if (availability.rows.length > 0) {
+      return res.status(409).json({ error: 'New slot not available' });
+    }
+
+    // Get the user's latest upcoming appointment
+    const originalAppointment = await pool.query(
+      `SELECT * FROM appointments 
+       WHERE email = $1 AND slot > NOW() AND status = 'booked' 
+       ORDER BY slot ASC LIMIT 1`,
+      [email]
+    );
+    if (originalAppointment.rowCount === 0) {
+      return res.status(404).json({ error: 'No upcoming booking found for this email' });
+    }
+
+    const original = originalAppointment.rows[0];
+
+    // Reschedule it
+    const result = await pool.query(
+      `UPDATE appointments SET slot = $1, status = 'rescheduled' WHERE id = $2 RETURNING *`,
+      [newDateTime, original.id]
+    )
     
     await sendRescheduleEmail({ 
       to: result.rows[0].email, 

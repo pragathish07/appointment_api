@@ -1,11 +1,11 @@
 const { Pool } = require('pg');
 
  const pool = new Pool({
-  user: 'postgres',
-  host: 'shinkansen.proxy.rlwy.net',
-  database: 'railway',
-  password: 'xaZYzwJSEnXtOrbEdlbsxwqBeXSouEMP',
-  port: 21790
+  user: 'umhre9bpwaa0kdlwaffy',
+  host: 'brcn63rrvzidwfsxpiiz-postgresql.services.clever-cloud.com',
+  database: 'brcn63rrvzidwfsxpiiz',
+  password: 'BQntnQejUZvCo4v3mKbKeLpzuVF142',
+  port: 50013
 });
 
 
