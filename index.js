@@ -337,7 +337,7 @@ app.get('/api/appointments', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT * FROM appointments WHERE email = $1 AND slot > NOW() AND status = 'booked' ORDER BY slot ASC`,
+      `SELECT * FROM appointments WHERE email = $1 AND slot > NOW() AND status IN ('booked', 'rescheduled') ORDER BY slot ASC`,
       [email]
     );
 
@@ -508,7 +508,7 @@ app.post('/api/appointments/:email/reschedule', async (req, res) => {
     await sendRescheduleEmail({ 
       to: result.rows[0].email, 
       name: result.rows[0].name, 
-      slot: originalSlot, 
+      slot: original, 
       newSlot: newDateTime, 
       title: result.rows[0].title 
     });
