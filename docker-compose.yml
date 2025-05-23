@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - 5678:5678
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=secure123
+      - WEBHOOK_TUNNEL_URL=https://4466-110-224-89-176.ngrok-free.app  # ✅ set actual HTTPS tunnel URL here
+      - N8N_HOST=n8n.local
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+    volumes:
+      - ~/.n8n:/home/node/.n8n
+    depends_on:
+      - ngrok
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: always
+    command: http n8n:5678
+    environment:
+      - NGROK_AUTHTOKEN=2xRYC7e5YWR7CkRdgOQonBx2ooS_6yfvJ6XxmAnURpW1LtDkF
+    ports:
+      - 4040:4040
