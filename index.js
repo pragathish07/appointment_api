@@ -83,214 +83,163 @@ const transporter = nodemailer.createTransport({
 });
 
 
-async function sendBookingEmail({ to, name, slot, title }) {
+// These functions assume a `property` object is passed with fields:
+// name, location, type, size, price, description, image
+
+async function sendBookingEmail({ to, name, slot, title, property }) {
+  const propertyHtml = property ? `
+    <h3>Property Details</h3>
+    <p><strong>${property.name}</strong></p>
+    <p>${property.location}</p>
+    <p>Type: ${property.type}, Size: ${property.size}, Price: ₹${property.price.toLocaleString()}</p>
+    <p>${property.description}</p>
+    ${property.image ? `<img src="${property.image}" width="500" style="margin-top: 10px;" />` : ''}
+  ` : '';
+
   const emailBody = `
   <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
     <h2 style="color: #2e6da4;">Appointment Confirmation</h2>
-    
     <p>Dear ${name},</p>
-
     <p>Thank you for scheduling your appointment with us. This is a confirmation that your booking has been successfully completed.</p>
-
     <table style="margin-top: 15px; border-collapse: collapse;">
-      <tr>
-        <td style="padding: 6px 10px;"><strong>Appointment Title:</strong></td>
-        <td style="padding: 6px 10px;">${title}</td>
-      </tr>
-      <tr>
-        <td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td>
-        <td style="padding: 6px 10px;">${new Date(slot).toLocaleString()}</td>
-      </tr>
+      <tr><td style="padding: 6px 10px;"><strong>Appointment Title:</strong></td><td style="padding: 6px 10px;">${title}</td></tr>
+      <tr><td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td><td style="padding: 6px 10px;">${new Date(slot).toLocaleString()}</td></tr>
     </table>
-
-    <p>If you have any questions or need to reschedule, feel free to contact us.</p>
-
+    ${propertyHtml}
     <p>We look forward to speaking with you.</p>
-
     <p>Best regards,<br><strong>Your Appointment Team</strong></p>
-  </div>
-`;
-  
-  // Send email to the customer
+  </div>`;
+
+  const adminBody = `
+  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+    <h2 style="color: #2e6da4;">New Appointment Booked</h2>
+    <p>A new appointment has been booked by ${name} (${to}).</p>
+    <table style="margin-top: 15px; border-collapse: collapse;">
+      <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
+      <tr><td><strong>Time:</strong></td><td>${new Date(slot).toLocaleString()}</td></tr>
+    </table>
+    ${propertyHtml}
+  </div>`;
+
   await transporter.sendMail({
     from: `Appointment Bot <${EMAIL_USERNAME}>`,
     to,
     subject: 'Your Appointment is Confirmed ✅',
     html: emailBody
   });
-  
-  // Send notification email to the admin
-  const adminEmailBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
-    <h2 style="color: #2e6da4;">New Appointment Notification</h2>
-    
-    <p>A new appointment has been booked:</p>
 
-    <table style="margin-top: 15px; border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Client Name:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${name}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Client Email:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${to}</td>
-      </tr>
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Appointment Title:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${title}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Scheduled Time:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${new Date(slot).toLocaleString()}</td>
-      </tr>
-    </table>
-
-    <p>This is an automated notification.</p>
-  </div>
-`;
-  
-  // Send notification email to admin
-  return transporter.sendMail({
+  await transporter.sendMail({
     from: `Appointment Bot <${EMAIL_USERNAME}>`,
     to: ADMIN_EMAIL,
     subject: '🔔 New Appointment Booked',
-    html: adminEmailBody
+    html: adminBody
   });
 }
 
-async function sendRescheduleEmail({ to, name, slot, title, newSlot }) {
+async function sendRescheduleEmail({ to, name, slot, title, newSlot, property }) {
+  const propertyHtml = property ? `
+    <h3>Property Details</h3>
+    <p><strong>${property.name}</strong></p>
+    <p>${property.location}</p>
+    <p>Type: ${property.type}, Size: ${property.size}, Price: ₹${property.price.toLocaleString()}</p>
+    <p>${property.description}</p>
+    ${property.image ? `<img src="${property.image}" width="500" style="margin-top: 10px;" />` : ''}
+  ` : '';
+
   const rescheduleEmailBody = `
   <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
     <h2 style="color: #f0ad4e;">Appointment Rescheduled</h2>
     <p>Dear ${name},</p>
-    <p>Your appointment has been successfully rescheduled. Here are your updated appointment details:</p>
+    <p>Your appointment has been successfully rescheduled.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>New Date & Time:</strong></td><td>${new Date(newSlot).toLocaleString()}</td></tr>
+      <tr><td><strong>Old Time:</strong></td><td>${new Date(slot).toLocaleString()}</td></tr>
+      <tr><td><strong>New Time:</strong></td><td>${new Date(newSlot).toLocaleString()}</td></tr>
     </table>
-    <p>If this new time doesn't work for you, please let us know at your earliest convenience.</p>
-    <p>Thank you for choosing us.</p>
+    ${propertyHtml}
+    <p>We look forward to seeing you then.</p>
     <p>Best regards,<br><strong>Your Appointment Team</strong></p>
-  </div>
-`;
+  </div>`;
 
-  // Send email to the customer
+  const adminBody = `
+  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+    <h2 style="color: #f0ad4e;">Appointment Rescheduled</h2>
+    <p>${name} (${to}) has rescheduled their appointment.</p>
+    <table style="margin-top: 15px;">
+      <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
+      <tr><td><strong>Old Time:</strong></td><td>${new Date(slot).toLocaleString()}</td></tr>
+      <tr><td><strong>New Time:</strong></td><td>${new Date(newSlot).toLocaleString()}</td></tr>
+    </table>
+    ${propertyHtml}
+  </div>`;
+
   await transporter.sendMail({
     from: `Appointment Bot <${EMAIL_USERNAME}>`,
     to,
     subject: 'Your Appointment has been Rescheduled ⏰',
     html: rescheduleEmailBody
   });
-  
-  // Send notification email to the admin
-  const adminRescheduleEmailBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
-    <h2 style="color: #f0ad4e;">Appointment Rescheduled Notification</h2>
-    
-    <p>An appointment has been rescheduled:</p>
 
-    <table style="margin-top: 15px; border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Client Name:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${name}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Client Email:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${to}</td>
-      </tr>
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Appointment Title:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${title}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Original Time:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${new Date(slot).toLocaleString()}</td>
-      </tr>
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>New Time:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${new Date(newSlot).toLocaleString()}</td>
-      </tr>
-    </table>
-
-    <p>This is an automated notification.</p>
-  </div>
-`;
-  
-  // Send notification email to admin
-  return transporter.sendMail({
+  await transporter.sendMail({
     from: `Appointment Bot <${EMAIL_USERNAME}>`,
     to: ADMIN_EMAIL,
     subject: '🔄 Appointment Rescheduled',
-    html: adminRescheduleEmailBody
+    html: adminBody
   });
 }
 
-async function sendCancelEmail({ to, name, slot, title, cancellationReason }) {
+async function sendCancelEmail({ to, name, slot, title, cancellationReason, property }) {
+  const propertyHtml = property ? `
+    <h3>Property Details</h3>
+    <p><strong>${property.name}</strong></p>
+    <p>${property.location}</p>
+    <p>Type: ${property.type}, Size: ${property.size}, Price: ₹${property.price.toLocaleString()}</p>
+    <p>${property.description}</p>
+    ${property.image ? `<img src="${property.image}" width="500" style="margin-top: 10px;" />` : ''}
+  ` : '';
+
   const cancelEmailBody = `
   <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
     <h2 style="color: #d9534f;">Appointment Cancelled</h2>
     <p>Dear ${name},</p>
-    <p>We would like to confirm that your appointment has been successfully cancelled.</p>
+    <p>Your appointment has been cancelled.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Original Date & Time:</strong></td><td>${new Date(slot).toLocaleString()}</td></tr>
+      <tr><td><strong>Scheduled Time:</strong></td><td>${new Date(slot).toLocaleString()}</td></tr>
+      <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
     </table>
-    <p><strong>Reason for Cancellation:</strong> ${cancellationReason || 'Not specified'}</p>
-    <p>If you'd like to reschedule or have any questions, please don't hesitate to contact us.</p>
-    <p>Best regards,<br><strong>Your Appointment Team</strong></p>
-  </div>
-`;
+    ${propertyHtml}
+    <p>If you'd like to rebook, please visit our site anytime.</p>
+    <p>Warm regards,<br><strong>Your Appointment Team</strong></p>
+  </div>`;
 
-  // Send email to the customer
+  const adminBody = `
+  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+    <h2 style="color: #d9534f;">Appointment Cancelled</h2>
+    <p>${name} (${to}) has cancelled their appointment.</p>
+    <table style="margin-top: 15px;">
+      <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
+      <tr><td><strong>Time:</strong></td><td>${new Date(slot).toLocaleString()}</td></tr>
+      <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
+    </table>
+    ${propertyHtml}
+  </div>`;
+
   await transporter.sendMail({
     from: `Appointment Bot <${EMAIL_USERNAME}>`,
     to,
     subject: 'Your Appointment has been Cancelled ❌',
     html: cancelEmailBody
   });
-  
-  // Send notification email to the admin
-  const adminCancelEmailBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
-    <h2 style="color: #d9534f;">Appointment Cancellation Notification</h2>
-    
-    <p>An appointment has been cancelled:</p>
 
-    <table style="margin-top: 15px; border-collapse: collapse; width: 100%; border: 1px solid #ddd;">
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Client Name:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${name}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Client Email:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${to}</td>
-      </tr>
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Appointment Title:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${title}</td>
-      </tr>
-      <tr>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Original Time:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${new Date(slot).toLocaleString()}</td>
-      </tr>
-      <tr style="background-color: #f2f2f2;">
-        <td style="padding: 8px 12px; border: 1px solid #ddd;"><strong>Cancellation Reason:</strong></td>
-        <td style="padding: 8px 12px; border: 1px solid #ddd;">${cancellationReason || 'Not specified'}</td>
-      </tr>
-    </table>
-
-    <p>This is an automated notification.</p>
-  </div>
-`;
-  
-  // Send notification email to admin
-  return transporter.sendMail({
+  await transporter.sendMail({
     from: `Appointment Bot <${EMAIL_USERNAME}>`,
     to: ADMIN_EMAIL,
     subject: '❌ Appointment Cancelled',
-    html: adminCancelEmailBody
+    html: adminBody
   });
 }
+
 
 // show Availability
 
@@ -376,47 +325,49 @@ app.get('/api/appointments/:uid', async (req, res) => {
   }
 });
 
-// Create a new booking (updated to match new body structure)
-app.post('/api/appointments', async (req, res) => {
-  const { name, email, title, description, slot } = req.body;
-  const tokens = req.session.tokens;
 
-  //if (!tokens) return res.status(401).json({ error: 'Not authenticated with Google' });
+
+// Create a new booking 
+app.post('/api/appointments', async (req, res) => {
+  const { name, email, slot, title, description, property_id } = req.body;
 
   try {
-    const check = await pool.query(
+    // Check for conflicts
+    const conflict = await pool.query(
       'SELECT * FROM appointments WHERE slot = $1 AND status = $2',
       [slot, 'booked']
     );
-    if (check.rows.length > 0)
+    if (conflict.rows.length > 0) {
       return res.status(409).json({ error: 'Slot already booked' });
+    }
 
+    // Insert appointment
     const result = await pool.query(
-      `INSERT INTO appointments (name, email, slot, title, description) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, email, slot, title, description]
+      `INSERT INTO appointments (name, email, slot, title, description, property_id, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'booked') RETURNING *`,
+      [name, email, slot, title, description, property_id]
     );
-/* 
-    // Add to Google Calendar
-    await createCalendarEvent(tokens, {
-      title,
-      description,
-      slot,
-      email
-    }); */
 
-    // Send Telegram message
-      await sendTelegramMessage({
-      chatId: '1301518677',
-      token: '7998442263:AAHwuYjIy_XVuX_W-c_NNR89_9uNhxnBFPI',
-      message: `📅 Appointment Confirmed!\nName: ${name}\nEmail: ${email}\nSlot: ${slot}\nTitle: ${title}`
+    // Fetch property details
+    const property = await pool.query(
+      'SELECT * FROM properties WHERE id = $1',
+      [property_id]
+    );
+    const prop = property.rows[0];
+
+    // Send confirmation email
+    await sendBookingEmail({ 
+      to: email, 
+      name, 
+      slot, 
+      title, 
+      property: prop || null 
     });
 
-    await sendBookingEmail({ to: email, name, slot, title });
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({ message: 'Appointment booked and email sent.', appointment: result.rows[0] });
   } catch (err) {
-    console.error('Error creating booking:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error booking appointment:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -427,7 +378,6 @@ app.post('/api/appointments/:email/cancel', async (req, res) => {
   const { cancellationReason } = req.body;
 
   try {
-    // Get the user's next upcoming booked appointment
     const appointment = await pool.query(
       `SELECT * FROM appointments 
        WHERE email = $1 AND slot > NOW() AND status IN ('booked', 'rescheduled')
@@ -440,8 +390,10 @@ app.post('/api/appointments/:email/cancel', async (req, res) => {
     }
 
     const appointmentId = appointment.rows[0].id;
+    const propertyId = appointment.rows[0].property_id;
 
-    // Cancel the appointment and update description with reason
+    const property = await pool.query('SELECT * FROM properties WHERE id = $1', [propertyId]);
+
     const result = await pool.query(
       `UPDATE appointments 
        SET status = $1, 
@@ -450,20 +402,16 @@ app.post('/api/appointments/:email/cancel', async (req, res) => {
        RETURNING *`,
       ['cancelled', cancellationReason || 'User requested cancellation', appointmentId]
     );
-    
-    await sendCancelEmail({
+
+    await sendCancelEmail({ 
       to: result.rows[0].email, 
       name: result.rows[0].name, 
       slot: result.rows[0].slot, 
       title: result.rows[0].title,
-      cancellationReason: cancellationReason || 'User requested cancellation'
+      cancellationReason: cancellationReason || 'User requested cancellation',
+      property: property.rows[0] || null
     });
-    
-    await sendTelegramMessage({
-      chatId: '1301518677',
-      token: '7998442263:AAHwuYjIy_XVuX_W-c_NNR89_9uNhxnBFPI',
-      message: `❌ Appointment Cancelled!\nName: ${result.rows[0].name}\nEmail: ${result.rows[0].email}\nSlot: ${result.rows[0].slot}\nTitle: ${result.rows[0].title}`
-    });
+
     res.json({ message: 'Booking cancelled', data: result.rows[0] });
   } catch (err) {
     console.error('Error cancelling booking:', err);
@@ -471,13 +419,11 @@ app.post('/api/appointments/:email/cancel', async (req, res) => {
   }
 });
 
-// Reschedule a booking
 app.post('/api/appointments/:email/reschedule', async (req, res) => {
   const { email } = req.params;
   const { newDateTime } = req.body;
 
   try {
-    // Check if new slot is already booked
     const availability = await pool.query(
       'SELECT * FROM appointments WHERE slot = $1 AND status = $2',
       [newDateTime, 'booked']
@@ -486,10 +432,9 @@ app.post('/api/appointments/:email/reschedule', async (req, res) => {
       return res.status(409).json({ error: 'New slot not available' });
     }
 
-    // Get the user's latest upcoming appointment
     const originalAppointment = await pool.query(
       `SELECT * FROM appointments 
-       WHERE email = $1 AND slot > NOW() AND status = 'booked' 
+       WHERE email = $1 AND slot > NOW() AND status IN ('booked', 'rescheduled')
        ORDER BY slot ASC LIMIT 1`,
       [email]
     );
@@ -498,26 +443,22 @@ app.post('/api/appointments/:email/reschedule', async (req, res) => {
     }
 
     const original = originalAppointment.rows[0];
+    const property = await pool.query('SELECT * FROM properties WHERE id = $1', [original.property_id]);
 
-    // Reschedule it
     const result = await pool.query(
       `UPDATE appointments SET slot = $1, status = 'rescheduled' WHERE id = $2 RETURNING *`,
       [newDateTime, original.id]
-    )
-    
+    );
+
     await sendRescheduleEmail({ 
       to: result.rows[0].email, 
       name: result.rows[0].name, 
       slot: original, 
       newSlot: newDateTime, 
-      title: result.rows[0].title 
+      title: result.rows[0].title,
+      property: property.rows[0] || null
     });
-    
-    await sendTelegramMessage({
-      chatId: '1301518677',
-      token: '7998442263:AAHwuYjIy_XVuX_W-c_NNR89_9uNhxnBFPI',
-      message: `📅 Appointment Rescheduled!\nName: ${result.rows[0].name}\nEmail: ${result.rows[0].email}\nNew Slot: ${newDateTime}\nTitle: ${result.rows[0].title}`
-    });
+
     res.json({ message: 'Booking rescheduled', data: result.rows[0] });
   } catch (err) {
     console.error('Error rescheduling booking:', err);
