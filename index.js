@@ -87,9 +87,16 @@ const transporter = nodemailer.createTransport({
 // name, location, type, size, price, description, image
 
 function formatSlot(slot) {
-  if (typeof slot === 'string') return slot.replace('T', ' ').substring(0, 16);
-  if (slot instanceof Date && !isNaN(slot)) return slot.toISOString().replace('T', ' ').substring(0, 16);
-  return slot;
+  const dateObj = typeof slot === 'string' ? new Date(slot) : (slot instanceof Date ? slot : new Date(slot?.slot));
+  if (!dateObj || isNaN(dateObj)) return String(slot);
+  return dateObj.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
 }
 
 async function sendBookingEmail({ to, name, slot, title, property }) {
