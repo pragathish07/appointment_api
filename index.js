@@ -86,7 +86,14 @@ const transporter = nodemailer.createTransport({
 // These functions assume a `property` object is passed with fields:
 // name, location, type, size, price, description, image
 
+function formatSlot(slot) {
+  if (typeof slot === 'string') return slot.replace('T', ' ').substring(0, 16);
+  if (slot instanceof Date && !isNaN(slot)) return slot.toISOString().replace('T', ' ').substring(0, 16);
+  return slot;
+}
+
 async function sendBookingEmail({ to, name, slot, title, property }) {
+  const formattedSlot = formatSlot(slot);
   const propertyHtml = property ? `
     <h3>Property Details</h3>
     <p><strong>${property.name}</strong></p>
@@ -103,7 +110,7 @@ async function sendBookingEmail({ to, name, slot, title, property }) {
     <p>Thank you for scheduling your appointment with us. This is a confirmation that your booking has been successfully completed.</p>
     <table style="margin-top: 15px; border-collapse: collapse;">
       <tr><td style="padding: 6px 10px;"><strong>Appointment Title:</strong></td><td style="padding: 6px 10px;">${title}</td></tr>
-      <tr><td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td><td style="padding: 6px 10px;">${slot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td><td style="padding: 6px 10px;">${formattedSlot}</td></tr>
     </table>
     ${propertyHtml}
     <p>We look forward to speaking with you.</p>
@@ -116,27 +123,18 @@ async function sendBookingEmail({ to, name, slot, title, property }) {
     <p>A new appointment has been booked by ${name} (${to}).</p>
     <table style="margin-top: 15px; border-collapse: collapse;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>Time:</strong></td><td>${formattedSlot}</td></tr>
     </table>
     ${propertyHtml}
   </div>`;
 
-  await transporter.sendMail({
-    from: `Appointment Bot <${EMAIL_USERNAME}>`,
-    to,
-    subject: 'Your Appointment is Confirmed ✅',
-    html: emailBody
-  });
-
-  await transporter.sendMail({
-    from: `Appointment Bot <${EMAIL_USERNAME}>`,
-    to: ADMIN_EMAIL,
-    subject: '🔔 New Appointment Booked',
-    html: adminBody
-  });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment is Confirmed ✅', html: emailBody });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to: ADMIN_EMAIL, subject: '🔔 New Appointment Booked', html: adminBody });
 }
 
 async function sendRescheduleEmail({ to, name, slot, title, newSlot, property }) {
+  const formattedSlot = formatSlot(slot);
+  const formattedNewSlot = formatSlot(newSlot);
   const propertyHtml = property ? `
     <h3>Property Details</h3>
     <p><strong>${property.name}</strong></p>
@@ -153,8 +151,8 @@ async function sendRescheduleEmail({ to, name, slot, title, newSlot, property })
     <p>Your appointment has been successfully rescheduled.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Old Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
-      <tr><td><strong>New Time:</strong></td><td>${newSlot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>Old Time:</strong></td><td>${formattedSlot}</td></tr>
+      <tr><td><strong>New Time:</strong></td><td>${formattedNewSlot}</td></tr>
     </table>
     ${propertyHtml}
     <p>We look forward to seeing you then.</p>
@@ -167,28 +165,18 @@ async function sendRescheduleEmail({ to, name, slot, title, newSlot, property })
     <p>${name} (${to}) has rescheduled their appointment.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Old Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
-      <tr><td><strong>New Time:</strong></td><td>${newSlot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>Old Time:</strong></td><td>${formattedSlot}</td></tr>
+      <tr><td><strong>New Time:</strong></td><td>${formattedNewSlot}</td></tr>
     </table>
     ${propertyHtml}
   </div>`;
 
-  await transporter.sendMail({
-    from: `Appointment Bot <${EMAIL_USERNAME}>`,
-    to,
-    subject: 'Your Appointment has been Rescheduled ⏰',
-    html: rescheduleEmailBody
-  });
-
-  await transporter.sendMail({
-    from: `Appointment Bot <${EMAIL_USERNAME}>`,
-    to: ADMIN_EMAIL,
-    subject: '🔄 Appointment Rescheduled',
-    html: adminBody
-  });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment has been Rescheduled ⏰', html: rescheduleEmailBody });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to: ADMIN_EMAIL, subject: '🔄 Appointment Rescheduled', html: adminBody });
 }
 
 async function sendCancelEmail({ to, name, slot, title, cancellationReason, property }) {
+  const formattedSlot = formatSlot(slot);
   const propertyHtml = property ? `
     <h3>Property Details</h3>
     <p><strong>${property.name}</strong></p>
@@ -205,7 +193,7 @@ async function sendCancelEmail({ to, name, slot, title, cancellationReason, prop
     <p>Your appointment has been cancelled.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Scheduled Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>Scheduled Time:</strong></td><td>${formattedSlot}</td></tr>
       <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
     </table>
     ${propertyHtml}
@@ -219,25 +207,14 @@ async function sendCancelEmail({ to, name, slot, title, cancellationReason, prop
     <p>${name} (${to}) has cancelled their appointment.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>Time:</strong></td><td>${formattedSlot}</td></tr>
       <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
     </table>
     ${propertyHtml}
   </div>`;
 
-  await transporter.sendMail({
-    from: `Appointment Bot <${EMAIL_USERNAME}>`,
-    to,
-    subject: 'Your Appointment has been Cancelled ❌',
-    html: cancelEmailBody
-  });
-
-  await transporter.sendMail({
-    from: `Appointment Bot <${EMAIL_USERNAME}>`,
-    to: ADMIN_EMAIL,
-    subject: '❌ Appointment Cancelled',
-    html: adminBody
-  });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment has been Cancelled ❌', html: cancelEmailBody });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to: ADMIN_EMAIL, subject: '❌ Appointment Cancelled', html: adminBody });
 }
 
 
