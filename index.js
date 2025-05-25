@@ -103,7 +103,7 @@ async function sendBookingEmail({ to, name, slot, title, property }) {
     <p>Thank you for scheduling your appointment with us. This is a confirmation that your booking has been successfully completed.</p>
     <table style="margin-top: 15px; border-collapse: collapse;">
       <tr><td style="padding: 6px 10px;"><strong>Appointment Title:</strong></td><td style="padding: 6px 10px;">${title}</td></tr>
-      <tr><td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td><td style="padding: 6px 10px;">${new Date(slot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
+      <tr><td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td><td style="padding: 6px 10px;">${slot.slice(0, 16).replace('T', ' ')}</td></tr>
     </table>
     ${propertyHtml}
     <p>We look forward to speaking with you.</p>
@@ -116,7 +116,7 @@ async function sendBookingEmail({ to, name, slot, title, property }) {
     <p>A new appointment has been booked by ${name} (${to}).</p>
     <table style="margin-top: 15px; border-collapse: collapse;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Time:</strong></td><td>${new Date(slot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
+      <tr><td><strong>Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
     </table>
     ${propertyHtml}
   </div>`;
@@ -153,8 +153,8 @@ async function sendRescheduleEmail({ to, name, slot, title, newSlot, property })
     <p>Your appointment has been successfully rescheduled.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Old Time:</strong></td><td>$${new Date(slot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
-      <tr><td><strong>New Time:</strong></td><td>${new Date(newSlot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
+      <tr><td><strong>Old Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>New Time:</strong></td><td>${newSlot.slice(0, 16).replace('T', ' ')}</td></tr>
     </table>
     ${propertyHtml}
     <p>We look forward to seeing you then.</p>
@@ -167,8 +167,8 @@ async function sendRescheduleEmail({ to, name, slot, title, newSlot, property })
     <p>${name} (${to}) has rescheduled their appointment.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Old Time:</strong></td><td>$${new Date(slot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
-      <tr><td><strong>New Time:</strong></td><td>${new Date(newSlot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
+      <tr><td><strong>Old Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
+      <tr><td><strong>New Time:</strong></td><td>${newSlot.slice(0, 16).replace('T', ' ')}</td></tr>
     </table>
     ${propertyHtml}
   </div>`;
@@ -205,7 +205,7 @@ async function sendCancelEmail({ to, name, slot, title, cancellationReason, prop
     <p>Your appointment has been cancelled.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Scheduled Time:</strong></td><td>${new Date(slot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
+      <tr><td><strong>Scheduled Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
       <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
     </table>
     ${propertyHtml}
@@ -219,7 +219,7 @@ async function sendCancelEmail({ to, name, slot, title, cancellationReason, prop
     <p>${name} (${to}) has cancelled their appointment.</p>
     <table style="margin-top: 15px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
-      <tr><td><strong>Time:</strong></td><td>${new Date(slot).toISOString().replace('T', ' ').substring(0, 16)}</td></tr>
+      <tr><td><strong>Time:</strong></td><td>${slot.slice(0, 16).replace('T', ' ')}</td></tr>
       <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
     </table>
     ${propertyHtml}
