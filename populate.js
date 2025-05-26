@@ -3,6 +3,7 @@ const path = require('path');
 const csv = require('csv-parser');
 const { Pool } = require('pg');
 
+// PostgreSQL connection settings — update accordingly
 const pool = new Pool({
   user: 'umhre9bpwaa0kdlwaffy',
   host: 'brcn63rrvzidwfsxpiiz-postgresql.services.clever-cloud.com',
@@ -11,7 +12,7 @@ const pool = new Pool({
   port: 50013
 });
 
-const filePath = path.join(__dirname, 'data3.csv');
+const filePath = path.join(__dirname, 'data3.csv'); // Your uploaded CSV filename
 
 const seedFromCSV = async () => {
   await pool.query(`
@@ -19,14 +20,12 @@ const seedFromCSV = async () => {
       id SERIAL PRIMARY KEY,
       title TEXT,
       listing_url TEXT,
-      bedrooms INTEGER,
-      bathrooms INTEGER,
-      area_sqm REAL,
+      price_eur INTEGER,
       property_type TEXT,
-      rent_eur INTEGER,
-      status TEXT,
+      bedrooms INTEGER,
+      area_sqm REAL,
       energy_rating TEXT,
-      agency TEXT
+      status TEXT
     );
   `);
 
@@ -42,27 +41,25 @@ const seedFromCSV = async () => {
         for (const item of listings) {
           await pool.query(
             `INSERT INTO properties (
-              title, listing_url, bedrooms, bathrooms, area_sqm, 
-              property_type, rent_eur, status, energy_rating, agency
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+              title, listing_url, price_eur, property_type,
+              bedrooms, area_sqm, energy_rating, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
               item["Titre du bien"],
               item["URL du bien"],
-              parseInt(item["Nombre de chambres"]) || 0,
-              parseInt(item["Nombre de salles de bain"]) || 0,
-              parseFloat(item["Surface (m²)"]) || 0,
+              parseInt(item["Prix (EUR)"]) || 0,
               item["Type de bien"],
-              parseInt(item["Loyer (EUR)"]) || 0,
-              item["Statut"],
+              parseInt(item["Nombre de chambres"]) || 0,
+              parseFloat(item["Surface (m2)"]) || 0,
               item["PEB"],
-              item["Agence"]
+              item["Statut"]
             ]
           );
         }
 
-        console.log("✅ CSV import completed successfully!");
-      } catch (error) {
-        console.error("❌ Error inserting into DB:", error);
+        console.log('✅ Property data imported successfully!');
+      } catch (err) {
+        console.error('❌ Error inserting data:', err);
       } finally {
         await pool.end();
       }
