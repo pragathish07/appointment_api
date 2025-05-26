@@ -99,25 +99,38 @@ function formatSlot(slot) {
   });
 }
 
+
+
+
 async function sendBookingEmail({ to, name, slot, title, property }) {
   const formattedSlot = formatSlot(slot);
-  const propertyHtml = property ? `
-    <h3>Property Details</h3>
-    <p><strong>${property.name}</strong></p>
-    <p>${property.location}</p>
-    <p>Type: ${property.type}, Size: ${property.size}, Price: ₹${property.price.toLocaleString()}</p>
-    <p>${property.description}</p>
-    ${property.image ? `<img src="${property.image}" width="500" style="margin-top: 10px;" />` : ''}
-  ` : '';
+  function formatPropertyHtml(property) {
+  if (!property) return '';
+
+  return `
+    <h3 style="margin-top: 20px; color: #2c3e50;">Property Details</h3>
+    <table style="border-collapse: collapse; margin-top: 8px;">
+      <tr><td><strong>Title:</strong></td><td>${property.title || 'N/A'}</td></tr>
+      <tr><td><strong>Type:</strong></td><td>${property.property_type || 'N/A'}</td></tr>
+      <tr><td><strong>Area:</strong></td><td>${property.area_sqm ?? 'N/A'} sqm</td></tr>
+      <tr><td><strong>Bedrooms:</strong></td><td>${property.bedrooms ?? 'N/A'}</td></tr>
+      <tr><td><strong>Energy Rating:</strong></td><td>${property.energy_rating || 'N/A'}</td></tr>
+      <tr><td><strong>Status:</strong></td><td>${property.status || 'N/A'}</td></tr>
+      <tr><td><strong>Price:</strong></td><td>€${property.price_eur ? property.price_eur.toLocaleString() : 'N/A'}</td></tr>
+      <tr><td><strong>Link:</strong></td><td><a href="${property.listing_url}" target="_blank">View Listing</a></td></tr>
+    </table>
+  `;
+}
+  const propertyHtml = formatPropertyHtml(property);
 
   const emailBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+  <div style="font-family: Arial; font-size: 15px; color: #333;">
     <h2 style="color: #2e6da4;">Appointment Confirmation</h2>
     <p>Dear ${name},</p>
-    <p>Thank you for scheduling your appointment with us. This is a confirmation that your booking has been successfully completed.</p>
-    <table style="margin-top: 15px; border-collapse: collapse;">
-      <tr><td style="padding: 6px 10px;"><strong>Appointment Title:</strong></td><td style="padding: 6px 10px;">${title}</td></tr>
-      <tr><td style="padding: 6px 10px;"><strong>Scheduled Time:</strong></td><td style="padding: 6px 10px;">${formattedSlot}</td></tr>
+    <p>Thank you for scheduling your appointment. This is a confirmation of your booking.</p>
+    <table style="margin-top: 10px;">
+      <tr><td><strong>Appointment Title:</strong></td><td>${title}</td></tr>
+      <tr><td><strong>Scheduled Time:</strong></td><td>${formattedSlot}</td></tr>
     </table>
     ${propertyHtml}
     <p>We look forward to speaking with you.</p>
@@ -125,10 +138,10 @@ async function sendBookingEmail({ to, name, slot, title, property }) {
   </div>`;
 
   const adminBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+  <div style="font-family: Arial; font-size: 15px; color: #333;">
     <h2 style="color: #2e6da4;">New Appointment Booked</h2>
-    <p>A new appointment has been booked by ${name} (${to}).</p>
-    <table style="margin-top: 15px; border-collapse: collapse;">
+    <p>${name} (${to}) booked an appointment:</p>
+    <table style="margin-top: 10px;">
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
       <tr><td><strong>Time:</strong></td><td>${formattedSlot}</td></tr>
     </table>
@@ -139,38 +152,48 @@ async function sendBookingEmail({ to, name, slot, title, property }) {
   await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to: ADMIN_EMAIL, subject: '🔔 New Appointment Booked', html: adminBody });
 }
 
+
 async function sendRescheduleEmail({ to, name, slot, title, newSlot, property }) {
   const formattedSlot = formatSlot(slot);
   const formattedNewSlot = formatSlot(newSlot);
-  const propertyHtml = property ? `
-    <h3>Property Details</h3>
-    <p><strong>${property.name}</strong></p>
-    <p>${property.location}</p>
-    <p>Type: ${property.type}, Size: ${property.size}, Price: ₹${property.price.toLocaleString()}</p>
-    <p>${property.description}</p>
-    ${property.image ? `<img src="${property.image}" width="500" style="margin-top: 10px;" />` : ''}
-  ` : '';
+  function formatPropertyHtml(property) {
+  if (!property) return '';
+
+  return `
+    <h3 style="margin-top: 20px; color: #2c3e50;">Property Details</h3>
+    <table style="border-collapse: collapse; margin-top: 8px;">
+      <tr><td><strong>Title:</strong></td><td>${property.title || 'N/A'}</td></tr>
+      <tr><td><strong>Type:</strong></td><td>${property.property_type || 'N/A'}</td></tr>
+      <tr><td><strong>Area:</strong></td><td>${property.area_sqm ?? 'N/A'} sqm</td></tr>
+      <tr><td><strong>Bedrooms:</strong></td><td>${property.bedrooms ?? 'N/A'}</td></tr>
+      <tr><td><strong>Energy Rating:</strong></td><td>${property.energy_rating || 'N/A'}</td></tr>
+      <tr><td><strong>Status:</strong></td><td>${property.status || 'N/A'}</td></tr>
+      <tr><td><strong>Price:</strong></td><td>€${property.price_eur ? property.price_eur.toLocaleString() : 'N/A'}</td></tr>
+      <tr><td><strong>Link:</strong></td><td><a href="${property.listing_url}" target="_blank">View Listing</a></td></tr>
+    </table>
+  `;
+}
+  const propertyHtml = formatPropertyHtml(property);
 
   const rescheduleEmailBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+  <div style="font-family: Arial; font-size: 15px; color: #333;">
     <h2 style="color: #f0ad4e;">Appointment Rescheduled</h2>
     <p>Dear ${name},</p>
     <p>Your appointment has been successfully rescheduled.</p>
-    <table style="margin-top: 15px;">
+    <table>
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
       <tr><td><strong>Old Time:</strong></td><td>${formattedSlot}</td></tr>
       <tr><td><strong>New Time:</strong></td><td>${formattedNewSlot}</td></tr>
     </table>
     ${propertyHtml}
-    <p>We look forward to seeing you then.</p>
-    <p>Best regards,<br><strong>Your Appointment Team</strong></p>
+    <p>Thank you for choosing us.</p>
   </div>`;
 
   const adminBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+  <div style="font-family: Arial; font-size: 15px; color: #333;">
     <h2 style="color: #f0ad4e;">Appointment Rescheduled</h2>
-    <p>${name} (${to}) has rescheduled their appointment.</p>
-    <table style="margin-top: 15px;">
+    <p>${name} (${to}) has rescheduled:</p>
+    <table>
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
       <tr><td><strong>Old Time:</strong></td><td>${formattedSlot}</td></tr>
       <tr><td><strong>New Time:</strong></td><td>${formattedNewSlot}</td></tr>
@@ -178,41 +201,51 @@ async function sendRescheduleEmail({ to, name, slot, title, newSlot, property })
     ${propertyHtml}
   </div>`;
 
-  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment has been Rescheduled ⏰', html: rescheduleEmailBody });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment Rescheduled ⏰', html: rescheduleEmailBody });
   await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to: ADMIN_EMAIL, subject: '🔄 Appointment Rescheduled', html: adminBody });
 }
 
+
 async function sendCancelEmail({ to, name, slot, title, cancellationReason, property }) {
   const formattedSlot = formatSlot(slot);
-  const propertyHtml = property ? `
-    <h3>Property Details</h3>
-    <p><strong>${property.name}</strong></p>
-    <p>${property.location}</p>
-    <p>Type: ${property.type}, Size: ${property.size}, Price: ₹${property.price.toLocaleString()}</p>
-    <p>${property.description}</p>
-    ${property.image ? `<img src="${property.image}" width="500" style="margin-top: 10px;" />` : ''}
-  ` : '';
+  function formatPropertyHtml(property) {
+  if (!property) return '';
+
+  return `
+    <h3 style="margin-top: 20px; color: #2c3e50;">Property Details</h3>
+    <table style="border-collapse: collapse; margin-top: 8px;">
+      <tr><td><strong>Title:</strong></td><td>${property.title || 'N/A'}</td></tr>
+      <tr><td><strong>Type:</strong></td><td>${property.property_type || 'N/A'}</td></tr>
+      <tr><td><strong>Area:</strong></td><td>${property.area_sqm ?? 'N/A'} sqm</td></tr>
+      <tr><td><strong>Bedrooms:</strong></td><td>${property.bedrooms ?? 'N/A'}</td></tr>
+      <tr><td><strong>Energy Rating:</strong></td><td>${property.energy_rating || 'N/A'}</td></tr>
+      <tr><td><strong>Status:</strong></td><td>${property.status || 'N/A'}</td></tr>
+      <tr><td><strong>Price:</strong></td><td>€${property.price_eur ? property.price_eur.toLocaleString() : 'N/A'}</td></tr>
+      <tr><td><strong>Link:</strong></td><td><a href="${property.listing_url}" target="_blank">View Listing</a></td></tr>
+    </table>
+  `;
+}
+  const propertyHtml = formatPropertyHtml(property);
 
   const cancelEmailBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+  <div style="font-family: Arial; font-size: 15px; color: #333;">
     <h2 style="color: #d9534f;">Appointment Cancelled</h2>
     <p>Dear ${name},</p>
     <p>Your appointment has been cancelled.</p>
-    <table style="margin-top: 15px;">
+    <table>
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
       <tr><td><strong>Scheduled Time:</strong></td><td>${formattedSlot}</td></tr>
       <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
     </table>
     ${propertyHtml}
-    <p>If you'd like to rebook, please visit our site anytime.</p>
-    <p>Warm regards,<br><strong>Your Appointment Team</strong></p>
+    <p>If you'd like to rebook, you're always welcome.</p>
   </div>`;
 
   const adminBody = `
-  <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+  <div style="font-family: Arial; font-size: 15px; color: #333;">
     <h2 style="color: #d9534f;">Appointment Cancelled</h2>
-    <p>${name} (${to}) has cancelled their appointment.</p>
-    <table style="margin-top: 15px;">
+    <p>${name} (${to}) cancelled their appointment.</p>
+    <table>
       <tr><td><strong>Title:</strong></td><td>${title}</td></tr>
       <tr><td><strong>Time:</strong></td><td>${formattedSlot}</td></tr>
       <tr><td><strong>Reason:</strong></td><td>${cancellationReason || 'Not specified'}</td></tr>
@@ -220,9 +253,10 @@ async function sendCancelEmail({ to, name, slot, title, cancellationReason, prop
     ${propertyHtml}
   </div>`;
 
-  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment has been Cancelled ❌', html: cancelEmailBody });
+  await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to, subject: 'Your Appointment Cancelled ❌', html: cancelEmailBody });
   await transporter.sendMail({ from: `Appointment Bot <${EMAIL_USERNAME}>`, to: ADMIN_EMAIL, subject: '❌ Appointment Cancelled', html: adminBody });
 }
+
 
 
 // show Availability
