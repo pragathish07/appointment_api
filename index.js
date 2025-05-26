@@ -496,7 +496,9 @@ app.get('/api/slots', async (req, res) => {
 app.get('/api/properties', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, location, price, size, type, description FROM properties ORDER BY id ASC`
+      `SELECT id, title, listing_url, bedrooms, bathrooms, area_sqm, property_type, rent_eur, status, energy_rating, agency 
+       FROM properties 
+       ORDER BY id ASC`
     );
     res.json({ properties: result.rows });
   } catch (err) {
@@ -504,6 +506,7 @@ app.get('/api/properties', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 
 
